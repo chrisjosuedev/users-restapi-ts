@@ -1,45 +1,158 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteUser = exports.putUser = exports.postUser = exports.getUser = exports.getUsers = void 0;
-const getUsers = (req, res) => {
-    res.status(200).json({
-        ok: true,
-        msg: 'getUsers'
-    });
-};
+const user_1 = __importDefault(require("../models/user"));
+const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const users = yield user_1.default.findAll();
+        return res.status(200).json({
+            ok: true,
+            users,
+        });
+    }
+    catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            ok: false,
+            msg: 'Query Failed',
+        });
+    }
+});
 exports.getUsers = getUsers;
-const getUser = (req, res) => {
+const getUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    res.status(200).json({
-        ok: true,
-        msg: 'getUser'
-    });
-};
+    try {
+        const user = yield user_1.default.findByPk(id);
+        if (!user) {
+            return res.status(404).json({
+                ok: false,
+                msg: "User doesn't exists",
+            });
+        }
+        return res.status(200).json({
+            ok: true,
+            user,
+        });
+    }
+    catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            ok: false,
+            msg: `Something wrong ${error}`,
+        });
+    }
+});
 exports.getUser = getUser;
-const postUser = (req, res) => {
-    const { body } = req.body;
-    res.status(200).json({
-        ok: true,
-        msg: 'postUser',
-        body
-    });
-};
+const postUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { body } = req;
+    try {
+        const existsEmail = yield user_1.default.findOne({
+            where: {
+                email: body.email,
+            },
+        });
+        if (existsEmail) {
+            return res.status(400).json({
+                ok: false,
+                msg: `${body.email} Email is already registered`,
+            });
+        }
+        const user = yield user_1.default.create(body);
+        return res.status(201).json({
+            ok: true,
+            user,
+        });
+    }
+    catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            ok: false,
+            msg: `Something wrong ${error}`,
+        });
+    }
+});
 exports.postUser = postUser;
-const putUser = (req, res) => {
+const putUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const { body } = req.body;
-    res.status(200).json({
-        ok: true,
-        msg: 'putUsers'
-    });
-};
+    const { body } = req;
+    try {
+        const user = yield user_1.default.findByPk(id);
+        /** Verify if users exists */
+        if (!user) {
+            return res.status(404).json({
+                ok: false,
+                msg: "User doesn' exists",
+            });
+        }
+        /** Verify if User sent an email */
+        if (body.email) {
+            const existsEmail = yield user_1.default.findOne({
+                where: {
+                    email: body.email,
+                },
+            });
+            if (existsEmail) {
+                return res.status(400).json({
+                    ok: false,
+                    msg: `${body.email} Email is already registered`,
+                });
+            }
+        }
+        /** Update User */
+        yield user.update(body);
+        return res.status(201).json({
+            ok: true,
+            user,
+        });
+    }
+    catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            ok: false,
+            msg: `Something wrong ${error}`,
+        });
+    }
+});
 exports.putUser = putUser;
-const deleteUser = (req, res) => {
+const deleteUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    res.status(200).json({
-        ok: true,
-        msg: 'deletetUser'
-    });
-};
+    try {
+        const user = yield user_1.default.findByPk(id);
+        /** Verify if users exists */
+        if (!user) {
+            return res.status(404).json({
+                ok: false,
+                msg: "User doesn' exists",
+            });
+        }
+        /** DELETED
+        await user.destroy()
+        **/
+        yield user.update({ status: false });
+        return res.status(201).json({
+            ok: true,
+            msg: 'User removed'
+        });
+    }
+    catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            ok: false,
+            msg: `Something wrong ${error}`,
+        });
+    }
+});
 exports.deleteUser = deleteUser;
 //# sourceMappingURL=users.controller.js.map

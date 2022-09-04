@@ -1,57 +1,159 @@
-import { Request, Response } from "express"
+import { Request, Response } from 'express';
+import User from '../models/user';
 
-export const getUsers = (req: Request, res: Response) => {
+export const getUsers = async (req: Request, res: Response) => {
+    try {
+        const users = await User.findAll();
 
-    res.status(200).json({
-        ok: true,
-        msg: 'getUsers'
-    })
+        return res.status(200).json({
+            ok: true,
+            users,
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            ok: false,
+            msg: 'Query Failed',
+        });
+    }
+};
 
-}
+export const getUser = async (req: Request, res: Response) => {
+    const { id } = req.params;
 
-export const getUser = (req: Request, res: Response) => {
+    try {
+        const user = await User.findByPk(id);
 
-    const { id } = req.params
+        if (!user) {
+            return res.status(404).json({
+                ok: false,
+                msg: "User doesn't exists",
+            });
+        }
 
-    res.status(200).json({
-        ok: true,
-        msg: 'getUser'
-    })
+        return res.status(200).json({
+            ok: true,
+            user,
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            ok: false,
+            msg: `Something wrong ${error}`,
+        });
+    }
+};
 
-}
+export const postUser = async (req: Request, res: Response) => {
+    const { body } = req;
 
-export const postUser = (req: Request, res: Response) => {
+    try {
+        const existsEmail = await User.findOne({
+            where: {
+                email: body.email,
+            },
+        });
 
-    const { body } = req.body
+        if (existsEmail) {
+            return res.status(400).json({
+                ok: false,
+                msg: `${body.email} Email is already registered`,
+            });
+        }
 
-    res.status(200).json({
-        ok: true,
-        msg: 'postUser',
-        body
-    })
+        const user = await User.create(body);
 
-}
+        return res.status(201).json({
+            ok: true,
+            user,
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            ok: false,
+            msg: `Something wrong ${error}`,
+        });
+    }
+};
 
-export const putUser = (req: Request, res: Response) => {
+export const putUser = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { body } = req;
 
-    const { id } = req.params
-    const { body } = req.body
+    try {
+        const user = await User.findByPk(id);
 
-    res.status(200).json({
-        ok: true,
-        msg: 'putUsers'
-    })
-
-}
-
-export const deleteUser = (req: Request, res: Response) => {
-
-    const { id } = req.params
+        /** Verify if users exists */
+        if (!user) {
+            return res.status(404).json({
+                ok: false,
+                msg: "User doesn' exists",
+            });
+        }
 
 
-    res.status(200).json({
-        ok: true,
-        msg: 'deletetUser'
-    })
+        /** Verify if User sent an email */
+        if (body.email) {
+            const existsEmail = await User.findOne({
+                where: {
+                    email: body.email,
+                },
+            });
 
-}
+            if (existsEmail) {
+                return res.status(400).json({
+                    ok: false,
+                    msg: `${body.email} Email is already registered`,
+                });
+            }
+        }
+
+        /** Update User */
+        await user.update(body);
+
+        return res.status(201).json({
+            ok: true,
+            user,
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            ok: false,
+            msg: `Something wrong ${error}`,
+        });
+    }
+};
+
+export const deleteUser = async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    try {
+        const user = await User.findByPk(id);
+
+        /** Verify if users exists */
+        if (!user) {
+            return res.status(404).json({
+                ok: false,
+                msg: "User doesn' exists",
+            });
+        }
+
+        /** DELETED 
+        await user.destroy()
+        **/
+
+        await user.update({ status: false })
+
+
+        return res.status(201).json({
+            ok: true,
+            msg: 'User removed'
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            ok: false,
+            msg: `Something wrong ${error}`,
+        });
+    }
+};
